@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     author="Chenglei Si",
     author_email="clsi@stanford.edu",
-    license="MIT License"
+    license="MIT License",
+    include_package_data=True,
 )
 
