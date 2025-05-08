@@ -438,7 +438,7 @@ def visual_eval_v3_multi(
     input_list: tuple[list[str], str],
     debug: bool = False, 
     take_screenshot_func: Callable[[str, str], None] = take_screenshot
-) -> list[list[float]]:
+) -> list[tuple[float, float, tuple[float, float, float, float, float]]]:
     predict_html_list: list[str] = input_list[0]
     original_html: str = input_list[1]
     predict_img_list = [html.replace(".html", ".png") for html in predict_html_list]
@@ -460,19 +460,19 @@ def visual_eval_v3_multi(
     # Consider context similarity for block matching
     consecutive_bonus, window_size = 0.1, 1
 
-    return_score_list = []
+    return_score_list: list[tuple[float, float, tuple[float, float, float, float, float]]] = []
 
     for k, predict_blocks in enumerate(predict_blocks_list):
-         if len(predict_blocks) == 0:
-                print("[Warning] No detected blocks in: ", predict_img_list[k])
-                final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-                return_score_list.append([0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)])
-                continue
-            elif len(original_blocks) == 0:
-                print("[Warning] No detected blocks in: ", original_img)
-                final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-                return_score_list.append([0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)])
-                continue
+        if len(predict_blocks) == 0:
+            print("[Warning] No detected blocks in: ", predict_img_list[k])
+            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
+            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
+            continue
+        elif len(original_blocks) == 0:
+            print("[Warning] No detected blocks in: ", original_img)
+            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
+            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
+            continue
 
         if debug:
             print(predict_blocks)
@@ -566,11 +566,21 @@ def visual_eval_v3_multi(
             final_text_color_score = np.mean(text_color_scores)
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             final_score = 0.2 * (final_size_score + final_matched_text_score + final_position_score + final_text_color_score + final_clip_score)
-            return_score_list.append([sum_sum_areas, final_score, (final_size_score, final_matched_text_score, final_position_score, final_text_color_score, final_clip_score)])
+            return_score_list.append((
+                float(sum_sum_areas), 
+                float(final_score), 
+                (
+                    float(final_size_score), 
+                    float(final_matched_text_score), 
+                    float(final_position_score), 
+                    float(final_text_color_score), 
+                    float(final_clip_score)
+                )
+            ))
         else:
             print("[Warning] No matched blocks in: ", predict_img_list[k])
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-            return_score_list.append([0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)])
+            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
     return return_score_list
     
     # except:
