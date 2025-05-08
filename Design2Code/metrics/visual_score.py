@@ -1,5 +1,8 @@
+from typing import Callable
 import cv2
 import numpy as np
+
+from Design2Code.metrics.screenshot_single import take_screenshot
 
 # This is a patch for color map, which is not updated for newer version of numpy
 def patch_asscalar(a):
@@ -431,7 +434,7 @@ def pre_process(html_file):
         file.write(soup_str)
 
 
-def visual_eval_v3_multi(input_list, debug=False):
+def visual_eval_v3_multi(input_list, debug=False, take_screenshot_func: Callable = take_screenshot):
     predict_html_list, original_html = input_list[0], input_list[1]
     predict_img_list = [html.replace(".html", ".png") for html in predict_html_list]
     # try:
@@ -440,12 +443,12 @@ def visual_eval_v3_multi(input_list, debug=False):
         predict_img = predict_html.replace(".html", ".png")
         # This will help fix some html syntax error
         pre_process(predict_html)
-        os.system(f"python3 metrics/screenshot_single.py --html {predict_html} --png {predict_img}")
+        take_screenshot_func(predict_html, predict_img)
         predict_blocks = get_blocks_ocr_free(predict_img)
         predict_blocks_list.append(predict_blocks)
 
     original_img = original_html.replace(".html", ".png")
-    os.system(f"python3 metrics/screenshot_single.py --html {original_html} --png {original_img}")
+    take_screenshot_func(original_html, original_img)
     original_blocks = get_blocks_ocr_free(original_img)
     original_blocks = merge_blocks_by_bbox(original_blocks)
 
