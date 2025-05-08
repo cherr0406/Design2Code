@@ -434,8 +434,13 @@ def pre_process(html_file):
         file.write(soup_str)
 
 
-def visual_eval_v3_multi(input_list, debug=False, take_screenshot_func: Callable = take_screenshot):
-    predict_html_list, original_html = input_list[0], input_list[1]
+def visual_eval_v3_multi(
+    input_list: tuple[list[str], str],
+    debug: bool = False, 
+    take_screenshot_func: Callable[[str, str], None] = take_screenshot
+) -> list[list[float]]:
+    predict_html_list: list[str] = input_list[0]
+    original_html: str = input_list[1]
     predict_img_list = [html.replace(".html", ".png") for html in predict_html_list]
     # try:
     predict_blocks_list = []
