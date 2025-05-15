@@ -213,7 +213,7 @@ def merge_blocks_by_list(blocks, merge_list):
             merge_list = new_merge_list
 
 
-def logger.debug_matching(matching, blocks1, blocks2, cost_matrix):
+def print_matching(matching, blocks1, blocks2, cost_matrix):
     for i, j in matching:
         logger.debug(f"{blocks1[i]} matched with {blocks2[j]}, cost {cost_matrix[i][j]}")
 
@@ -256,7 +256,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
         matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
         if debug:
             logger.debug("Current cost of the solution:", current_cost)
-            logger.debug_matching(matching, A, B, cost_matrix)
+            print_matching(matching, A, B, cost_matrix)
     
         if len(A) >= 2:
             merge_list = []
