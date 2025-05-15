@@ -6,8 +6,11 @@ import os
 import json
 import argparse
 from tqdm import tqdm
+import logging
 import random 
 random.seed(2023)
+
+logger = logging.getLogger(__name__)
 
 placeholder_image = "rick.jpg"
 
@@ -65,7 +68,7 @@ if __name__ == "__main__":
     #         urls.append(d["url"])
 
     # urls = list(set(urls))
-    # print ("total #urls: ", len(urls))
+    # logger.debug ("total #urls: ", len(urls))
 
     # if not os.path.exists("../c4-val-html-part{}".format(partition)):
     #     os.makedirs("../c4-val-html-part{}".format(partition))

@@ -4,7 +4,9 @@ import os
 from bs4 import BeautifulSoup, NavigableString
 from tqdm import tqdm
 import re
+import logging
 
+logger = logging.getLogger(__name__)
 
 def cleanup_response(response):
     ## simple post-processing
@@ -57,7 +59,7 @@ def rescale_image_loader(image_path):
         # Check if resizing is needed
         if short_side <= 768:
             if long_side > 2000:
-                print ("Bad aspect ratio for GPT-4V: ", image_path)
+                logger.debug ("Bad aspect ratio for GPT-4V: ", image_path)
                 return None
             else:
                 ## no need rescaling, return the base64 encoded image
@@ -70,7 +72,7 @@ def rescale_image_loader(image_path):
 
         # Check if the long side exceeds 2000 pixels after rescaling
         if new_width > 2000 or new_height > 2000:
-            print ("Bad aspect ratio for GPT-4V: ", image_path)
+            logger.debug ("Bad aspect ratio for GPT-4V: ", image_path)
             return None
 
         # Resize the image
@@ -95,7 +97,7 @@ def gpt_cost(model, usage):
     elif model == "gpt-4-1106-preview" or model == "gpt-4-1106":
         return (0.01 * usage.prompt_tokens + 0.03 * usage.completion_tokens) / 1000.0
     else:
-        print ("model not supported: ", model)
+        logger.debug ("model not supported: ", model)
         return 0
 
 
@@ -244,11 +246,11 @@ if __name__ == "__main__":
     with open(os.path.join(reference_dir, "7713.html"), "r") as f:
         html_content = f.read()
     
-    # print (extract_text_from_html(html_content))
+    # logger.debug (extract_text_from_html(html_content))
 
     html, text_dict = index_text_from_html(html_content)
 
     with open(os.path.join(predictions_dir, "7713_temp.html"), "w") as f:
         f.write(html)
     
-    print (text_dict)
+    logger.debug (text_dict)

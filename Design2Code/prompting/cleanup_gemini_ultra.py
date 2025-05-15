@@ -7,6 +7,9 @@ from openai import OpenAI, AzureOpenAI
 import argparse
 import retry
 import shutil 
+import logging
+
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     predictions_dirs = ["../../gemini_pro_predictions_full/direct_prompting", "../../gemini_pro_predictions_full/text_augmented_prompting", "../../gemini_pro_predictions_full/visual_revision_prompting"]
@@ -21,4 +24,4 @@ if __name__ == "__main__":
                 try:
                     take_screenshot(os.path.join(predictions_dir, filename), os.path.join(predictions_dir, filename.replace(".html", ".png")))
                 except:
-                    print ("screen shot failed for: ", filename)
+                    logger.debug ("screen shot failed for: ", filename)

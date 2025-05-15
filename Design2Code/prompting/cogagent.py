@@ -4,6 +4,9 @@ from transformers import AutoModelForCausalLM, LlamaTokenizer
 import argparse
 import os 
 from tqdm import tqdm
+import logging
+
+logger = logging.getLogger(__name__)
 
 cache_dir = '/juice2/scr2/nlp/pix2code/huggingface'
 
@@ -37,7 +40,7 @@ if __name__ == "__main__":
     else:
         torch_type = torch.float16
 
-    print("========Use torch type as:{} with device:{}========\n\n".format(torch_type, DEVICE))
+    logger.debug("========Use torch type as:{} with device:{}========\n\n".format(torch_type, DEVICE))
 
     if args.quant:
         model = AutoModelForCausalLM.from_pretrained(
@@ -58,7 +61,7 @@ if __name__ == "__main__":
             cache_dir=cache_dir
         ).to(DEVICE).eval()
 
-    print ("parameter count: ", model.num_parameters())
+    logger.debug ("parameter count: ", model.num_parameters())
 
     test_dir = "/nlp/scr/clsi/Pix2Code/testset_final"
     prediction_dir = "/nlp/scr/clsi/Pix2Code/cogagent_predictions_full"
@@ -71,7 +74,7 @@ if __name__ == "__main__":
             query = direct_prompt
             history = []
 
-            print ("Doing inference on: ", image_path)
+            logger.debug ("Doing inference on: ", image_path)
             input_by_model = model.build_conversation_input_ids(tokenizer, query=query, history=history, images=[image])
             inputs = {
                 'input_ids': input_by_model['input_ids'].unsqueeze(0).to(DEVICE),

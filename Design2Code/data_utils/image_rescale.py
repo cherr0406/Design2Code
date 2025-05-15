@@ -5,6 +5,9 @@ import json
 from bs4 import BeautifulSoup,Tag, NavigableString
 from nltk.tokenize import sent_tokenize
 from screenshot import take_screenshot
+import logging
+
+logger = logging.getLogger(__name__)
 
 def calculate_blue_percentage(img):
     # with Image.open(image_path) as img:
@@ -42,7 +45,7 @@ def rescale_image(image_path):
     with Image.open(image_path) as img:
         # Get original dimensions
         width, height = img.size
-        # print ("original: ", width, height)
+        # logger.debug ("original: ", width, height)
 
         # Determine the short side
         short_side = min(width, height)
@@ -53,7 +56,7 @@ def rescale_image(image_path):
             if long_side > 2000:
                 return False
             else:
-                # print ("retained: ", width, height)
+                # logger.debug ("retained: ", width, height)
                 img = img.save(image_path)
                 return True
 
@@ -68,13 +71,13 @@ def rescale_image(image_path):
 
         # Resize the image
         resized_img = img.resize((new_width, new_height), Image.LANCZOS)
-        # print ("resized: ", new_width, new_height)
+        # logger.debug ("resized: ", new_width, new_height)
 
         resized_img = resized_img.save(image_path)
         return True
 
     # except Exception as e:
-    #     print(f"An error occurred: {e}")
+    #     logger.debug(f"An error occurred: {e}")
     #     return False
 
 def rescale_filter(dir, html_path):
@@ -90,26 +93,26 @@ def rescale_filter(dir, html_path):
 
     ## take screenshot of the truncated webpage 
     take_screenshot(os.path.join(dir, html_path), os.path.join(dir, html_path.replace(".html", ".png")))
-    # print (html_path, "screenshot saved")
+    # logger.debug (html_path, "screenshot saved")
 
     rescaled_img = rescale_image(os.path.join(dir, html_path.replace(".html", ".png")))
     if not rescaled_img:
-        # print (html_path, rescaled_img)
+        # logger.debug (html_path, rescaled_img)
         return False
 
     ## load the rescaled image 
     with Image.open(os.path.join(dir, html_path.replace(".html", ".png"))) as rescaled_img:
-        # print (html_path, rescaled_img.size)
+        # logger.debug (html_path, rescaled_img.size)
         ## blue is the placeholder image file; filter out cases where the entire webpage is just the image
         blue = calculate_blue_percentage(rescaled_img)
-        # print ("blue: ", blue)
+        # logger.debug ("blue: ", blue)
         if blue > 0.65:
-            # print (html_path, "filtered out by color")
+            # logger.debug (html_path, "filtered out by color")
             del rescaled_img
             return False
 
     # rescaled_img.save(os.path.join(dir, html_path.replace(".html", ".png")))
-    # print (html_path, "updated")
+    # logger.debug (html_path, "updated")
     del rescaled_img
 
     return True

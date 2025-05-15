@@ -27,10 +27,12 @@ from Design2Code.data_utils.dedup_post_gen import check_repetitive_content
 from bs4 import BeautifulSoup, NavigableString, Comment
 import re
 import math
+import logging
 from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000
 
+logger = logging.getLogger(__name__)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
@@ -211,9 +213,9 @@ def merge_blocks_by_list(blocks, merge_list):
             merge_list = new_merge_list
 
 
-def print_matching(matching, blocks1, blocks2, cost_matrix):
+def logger.debug_matching(matching, blocks1, blocks2, cost_matrix):
     for i, j in matching:
-        print(f"{blocks1[i]} matched with {blocks2[j]}, cost {cost_matrix[i][j]}")
+        logger.debug(f"{blocks1[i]} matched with {blocks2[j]}, cost {cost_matrix[i][j]}")
 
 
 def difference_of_means(list1, list2):
@@ -253,8 +255,8 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
 
         matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
         if debug:
-            print("Current cost of the solution:", current_cost)
-            print_matching(matching, A, B, cost_matrix)
+            logger.debug("Current cost of the solution:", current_cost)
+            logger.debug_matching(matching, A, B, cost_matrix)
     
         if len(A) >= 2:
             merge_list = []
@@ -268,7 +270,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 if  diff > 0.05:
                     merge_list.append([i, i + 1, diff])
                     if debug:
-                        print(new_A[i]['text'], diff)
+                        logger.debug(new_A[i]['text'], diff)
 
             merge_list.sort(key=sortFn, reverse=True)
             if len(merge_list) > 0:
@@ -276,7 +278,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 A = merge_blocks_by_list(A, merge_list)
                 matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
                 if debug:
-                    print("Cost after optimization A:", current_cost)
+                    logger.debug("Cost after optimization A:", current_cost)
 
         if len(B) >= 2:
             merge_list = []
@@ -290,7 +292,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 if diff > 0.05:
                     merge_list.append([i, i + 1, diff])
                     if debug:
-                        print(new_B[i]['text'], diff)
+                        logger.debug(new_B[i]['text'], diff)
 
             merge_list.sort(key=sortFn, reverse=True)
             if len(merge_list) > 0:
@@ -298,7 +300,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 B = merge_blocks_by_list(B, merge_list)
                 matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
                 if debug:
-                    print("Cost after optimization B:", current_cost)
+                    logger.debug("Cost after optimization B:", current_cost)
 
         if not A_changed and not B_changed:
             break
@@ -464,19 +466,19 @@ def visual_eval_v3_multi(
 
     for k, predict_blocks in enumerate(predict_blocks_list):
         if len(predict_blocks) == 0:
-            print("[Warning] No detected blocks in: ", predict_img_list[k])
+            logger.debug("[Warning] No detected blocks in: ", predict_img_list[k])
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
         elif len(original_blocks) == 0:
-            print("[Warning] No detected blocks in: ", original_img)
+            logger.debug("[Warning] No detected blocks in: ", original_img)
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
 
         if debug:
-            print(predict_blocks)
-            print(original_blocks)
+            logger.debug(predict_blocks)
+            logger.debug(original_blocks)
     
         predict_blocks = merge_blocks_by_bbox(predict_blocks)
         predict_blocks_m, original_blocks_m, matching = find_possible_merge(predict_blocks, deepcopy(original_blocks), consecutive_bonus, window_size, debug=debug)
@@ -524,7 +526,7 @@ def visual_eval_v3_multi(
     
             # validation check
             if min(predict_blocks_m[i]['bbox'][2], original_blocks_m[j]['bbox'][2], predict_blocks_m[i]['bbox'][3], original_blocks_m[j]['bbox'][3]) == 0:
-                print(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
+                logger.debug(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
             assert calculate_ratio(predict_blocks_m[i]['bbox'][2], original_blocks_m[j]['bbox'][2]) > 0 and calculate_ratio(predict_blocks_m[i]['bbox'][3], original_blocks_m[j]['bbox'][3]) > 0, f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}"
     
             sum_areas.append(sum_block_area)
@@ -534,12 +536,12 @@ def visual_eval_v3_multi(
             text_color_scores.append(text_color_similarity)
     
             if debug:
-                print(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
-                print(SequenceMatcher(None, predict_blocks_m[i]['text'], original_blocks_m[j]['text']).ratio())
-                print("text similarity score", text_similarity)
-                print("position score", position_similarity)
-                print("color score", text_color_similarity)
-                print("----------------------------------")
+                logger.debug(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
+                logger.debug(SequenceMatcher(None, predict_blocks_m[i]['text'], original_blocks_m[j]['text']).ratio())
+                logger.debug("text similarity score", text_similarity)
+                logger.debug("position score", position_similarity)
+                logger.debug("color score", text_color_similarity)
+                logger.debug("----------------------------------")
                 pass
         """
         if debug:
@@ -578,13 +580,13 @@ def visual_eval_v3_multi(
                 )
             ))
         else:
-            print("[Warning] No matched blocks in: ", predict_img_list[k])
+            logger.debug("[Warning] No matched blocks in: ", predict_img_list[k])
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
     return return_score_list
     
     # except:
-    #     print("[Warning] Error not handled in: ", input_list)
+    #     logger.debug("[Warning] Error not handled in: ", input_list)
     #     return [[0.0, 0.0, (0.0, 0.0, 0.0, 0.0, 0.0)] for _ in range(len(predict_html_list))]
 
 

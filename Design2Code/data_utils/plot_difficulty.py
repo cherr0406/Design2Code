@@ -4,7 +4,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt 
 from scipy.stats import pearsonr
 
+import logging
 
+logger = logging.getLogger(__name__)
 
 def line_plot():
     method_name = "gpt4v_visual_revision_prompting"
@@ -124,9 +126,9 @@ def correlation():
         y_variables["CLIP"].append(res[5])
     
     for key in y_variables:
-        print (key)
+        logger.debug (key)
         correlation, p = pearsonr(x_variables, y_variables[key])
-        print (correlation, p)
+        logger.debug (correlation, p)
 
 
 
@@ -149,7 +151,7 @@ def find_prompting_difference():
     ## get sorted indices
     sorted_idx = sorted(range(len(differences)), key=lambda k: differences[k])[::-1]
     for idx in sorted_idx[ : 10]:
-        print (file_name_list[idx], differences[idx])
+        logger.debug (file_name_list[idx], differences[idx])
 
     return 
 

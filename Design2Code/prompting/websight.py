@@ -6,6 +6,9 @@ from transformers.image_transforms import resize, to_channel_dimension_format
 from gpt4v_utils import cleanup_response
 from tqdm import tqdm 
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 DEVICE = torch.device("cuda")
 HF_TOKEN = "YOUR HF TOKEN"
@@ -23,7 +26,7 @@ MODEL = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.bfloat16,
 ).to(DEVICE)
 
-print ("parameter count: ", MODEL.num_parameters())
+logger.debug ("parameter count: ", MODEL.num_parameters())
 
 image_seq_len = MODEL.config.perceiver_config.resampler_n_latents
 BOS_TOKEN = PROCESSOR.tokenizer.bos_token

@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from collections import Counter
 import os
 import json
+import logging
 import pandas as pd
 import numpy as np
 
@@ -11,6 +12,8 @@ from datasets import load_dataset
 from transformers import GPT2TokenizerFast
 tokenizer = GPT2TokenizerFast.from_pretrained("openai-community/gpt2")
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
 
 html5_tags = [
     "!DOCTYPE", "a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "blockquote",
@@ -185,12 +188,12 @@ def websight():
 
     sorted_tag_frequency_dict = dict(sorted(tag_frequencies.items(), key=lambda item: item[1], reverse=True))
     filtered_tag_frequency_dict = {k: v for k, v in sorted_tag_frequency_dict.items() if k in html5_tags}
-    # print ("tag frequency: ", filtered_tag_frequency_dict)
-    print ("mean length: ", np.mean(all_lengths))
-    print ("mean total tags: ", np.mean(all_total_tags))
-    print ("mean dom depth: ", np.mean(all_dom_depths))
-    print ("mean unique tags: ", np.mean(all_unique_tags))
-    print ("tag type: ", len(filtered_tag_frequency_dict))
+    # logger.debug ("tag frequency: ", filtered_tag_frequency_dict)
+    logger.debug ("mean length: ", np.mean(all_lengths))
+    logger.debug ("mean total tags: ", np.mean(all_total_tags))
+    logger.debug ("mean dom depth: ", np.mean(all_dom_depths))
+    logger.debug ("mean unique tags: ", np.mean(all_unique_tags))
+    logger.debug ("tag type: ", len(filtered_tag_frequency_dict))
 
     with open("websight_stats.json", "w") as f:
         json.dump({
@@ -211,10 +214,10 @@ def websight_stats():
     unique_tags = stats["unique_tags"]
     tag_frequencies = stats["tag_frequencies"]
     
-    print ("mean length: ", np.mean(lengths), np.std(lengths))
-    print ("mean total tags: ", np.mean(total_tags), np.std(total_tags))
-    print ("mean dom depth: ", np.mean(dom_depths), np.std(dom_depths))
-    print ("mean unique tags: ", np.mean(unique_tags), np.std(unique_tags))
+    logger.debug ("mean length: ", np.mean(lengths), np.std(lengths))
+    logger.debug ("mean total tags: ", np.mean(total_tags), np.std(total_tags))
+    logger.debug ("mean dom depth: ", np.mean(dom_depths), np.std(dom_depths))
+    logger.debug ("mean unique tags: ", np.mean(unique_tags), np.std(unique_tags))
 
 if __name__ == "__main__":
     # websight()
@@ -247,10 +250,10 @@ if __name__ == "__main__":
     #             unique_tags = count_unique_tags(html_content)
     #             all_counts.append(unique_tags)
 
-    # print (len(all_counts))
-    # print (np.mean(all_counts))
-    # print (min(all_counts), max(all_counts))
-    # print (np.std(all_counts))
+    # logger.debug (len(all_counts))
+    # logger.debug (np.mean(all_counts))
+    # logger.debug (min(all_counts), max(all_counts))
+    # logger.debug (np.std(all_counts))
 
     # ## get different percentiles 
     # numbers = np.array(all_counts)
@@ -264,15 +267,15 @@ if __name__ == "__main__":
 
     # indices_dict = dict(zip(percentiles, indices))
     # for k,v in indices_dict.items():
-    #     print(f"{k}th percentile: {all_filenames[v]}")
-    #     print (f"Value: {all_counts[v]}")
+    #     logger.debug(f"{k}th percentile: {all_filenames[v]}")
+    #     logger.debug (f"Value: {all_counts[v]}")
     
     sorted_tag_frequency_dict = dict(sorted(tag_frequencies.items(), key=lambda item: item[1], reverse=True))
-    print (sorted_tag_frequency_dict)
-    print (len(sorted_tag_frequency_dict))
+    logger.debug (sorted_tag_frequency_dict)
+    logger.debug (len(sorted_tag_frequency_dict))
 
     ## filter out tags with only one occurrence 
     filtered_tag_frequency_dict = {k: v for k, v in sorted_tag_frequency_dict.items() if k in html5_tags}
-    print (len(filtered_tag_frequency_dict))
+    logger.debug (len(filtered_tag_frequency_dict))
     '''
 

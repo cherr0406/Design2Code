@@ -7,6 +7,9 @@ from openai import OpenAI, AzureOpenAI
 import argparse
 import retry
 import shutil 
+import logging
+
+logger = logging.getLogger(__name__)
 
 @retry.retry(tries=3, delay=2)
 def gpt4v_call(openai_client, base64_image, prompt):
@@ -311,7 +314,7 @@ if __name__ == "__main__":
 		test_data_dir = "../testset_full"
 		cache_dir = "../predictions_full/"
 	else:
-		print ("Invalid subset!")
+		logger.debug ("Invalid subset!")
 		exit()
 
 	if args.prompt_method == "direct_prompting":
@@ -324,7 +327,7 @@ if __name__ == "__main__":
 		predictions_dir = cache_dir + "gpt4v_visual_revision_prompting"
 		orig_data_dir = cache_dir + args.orig_output_dir
 	else: 
-		print ("Invalid prompt method!")
+		logger.debug ("Invalid prompt method!")
 		exit()
 	
 	## create cache directory if not exists
@@ -339,7 +342,7 @@ if __name__ == "__main__":
 
 	for filename in tqdm(test_files):
 		if filename.endswith(".png"):
-			print (filename)
+			logger.debug (filename)
 			try:
 				if args.prompt_method == "direct_prompting":
 					html, prompt_tokens, completion_tokens, cost = direct_prompting(openai_client, os.path.join(test_data_dir, filename))

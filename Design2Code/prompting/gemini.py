@@ -8,6 +8,9 @@ import google.generativeai as genai
 import argparse
 import retry
 import shutil 
+import logging
+
+logger = logging.getLogger(__name__)
 
 @retry.retry(tries=2, delay=2)
 def gemini_call(gemini_client, encoded_image, prompt):
@@ -227,7 +230,7 @@ if __name__ == "__main__":
       test_data_dir = "../testset_full"
       cache_dir = "../gemini_predictions_full/"
     else:
-      print ("Invalid subset!")
+      logger.debug ("Invalid subset!")
       exit()
 
     if args.prompt_method == "direct_prompting":
@@ -240,7 +243,7 @@ if __name__ == "__main__":
       predictions_dir = cache_dir + "gemini_visual_revision_prompting"
       orig_data_dir = cache_dir + args.orig_output_dir
     else: 
-      print ("Invalid prompt method!")
+      logger.debug ("Invalid prompt method!")
       exit()
     
     ## create cache directory if not exists
@@ -249,7 +252,7 @@ if __name__ == "__main__":
 
     # get the list of predictions already made
     existing_predictions = [item for item in os.listdir(predictions_dir) if item.endswith(".png")]
-    print ("#existing predictions: ", len(existing_predictions))
+    logger.debug ("#existing predictions: ", len(existing_predictions))
     
     test_files = []
     if args.file_name == "all":
@@ -259,7 +262,7 @@ if __name__ == "__main__":
 
     counter = 0
     for filename in tqdm(test_files):
-        # print (filename)
+        # logger.debug (filename)
         try:
             if args.prompt_method == "direct_prompting":
                 html = direct_prompting(gemini_client, os.path.join(test_data_dir, filename))
@@ -278,5 +281,5 @@ if __name__ == "__main__":
         except:
             continue 
 
-    print ("#new predictions: ", counter)
+    logger.debug ("#new predictions: ", counter)
             
