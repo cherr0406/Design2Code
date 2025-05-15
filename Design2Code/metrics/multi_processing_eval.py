@@ -7,6 +7,9 @@ import numpy as np
 import json
 import os
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
@@ -27,13 +30,13 @@ def tqdm_joblib(tqdm_object):
 
 def print_multi_score(multi_score):
     _, final_size_score, final_matched_text_score, final_position_score, final_text_color_score, final_clip_score = multi_score
-    print()
-    print("Block-Match: ", final_size_score)
-    print("Text: ", final_matched_text_score)
-    print("Position: ", final_position_score)
-    print("Color: ", final_text_color_score)
-    print("CLIP: ", final_clip_score)
-    print("--------------------------------\n")
+    logger.debug()
+    logger.debug("Block-Match: ", final_size_score)
+    logger.debug("Text: ", final_matched_text_score)
+    logger.debug("Position: ", final_position_score)
+    logger.debug("Color: ", final_text_color_score)
+    logger.debug("CLIP: ", final_clip_score)
+    logger.debug("--------------------------------\n")
 
 if __name__ == "__main__":
     debug = False
@@ -115,9 +118,9 @@ if __name__ == "__main__":
         json.dump(res_dict, f, indent=4)
 
     for key in test_dirs:
-        print(key)
+        logger.debug(key)
         values = list(res_dict[key].values())
         # print (values)
         current_res = np.mean(np.array(values), axis=0)
-        # print(current_res)
+        # logger.debug(current_res)
         print_multi_score(current_res)

@@ -13,8 +13,10 @@ from bs4 import BeautifulSoup,Tag, NavigableString
 from screenshot import take_screenshot
 from image_rescale import rescale_filter
 import random 
+import logging
 random.seed(2023)
 
+logger = logging.getLogger(__name__)
 
 cssutils.log.setLevel(logging.CRITICAL)
 
@@ -315,7 +317,7 @@ def remove_unused_css(html_content):
                                 break
                         except:
                             # An error occurred while trying to match the selector
-                            # print(f"A selector caused an error and was ignored: {e}")
+                            # logger.debug(f"A selector caused an error and was ignored: {e}")
                             # Consider selector as used to avoid removing potentially valid CSS
                             selector_is_used = True
                             break
@@ -335,7 +337,7 @@ def remove_unused_css(html_content):
                 style_tag.decompose()
 
         except:
-            # print(f"An error occurred while parsing CSS: {e}")
+            # logger.debug(f"An error occurred while parsing CSS: {e}")
             # In case of an error, leave the original CSS unchanged
             continue
 
@@ -404,14 +406,14 @@ def optimize_html_styles(html_content, threshold=2000):
         elif current_length + new_length > threshold:
             if current_length > 0:
                 string_list.append(used_styles.cssText.decode('utf-8'))
-                # print("Truncated CSS length", current_length)
+                # logger.debug("Truncated CSS length", current_length)
             used_styles = cssutils.parseString('')
             used_styles.add(current_rule)
             current_length = new_length
 
     if current_length > 100:
         string_list.append(used_styles.cssText.decode('utf-8'))
-        # print("Truncated CSS length", current_length)
+        # logger.debug("Truncated CSS length", current_length)
 
     html_content_list = []
     for j, string in enumerate(string_list):
@@ -546,7 +548,7 @@ def all_filters_train(html_content):
         final_list = []
         for html_content in html_content_list:
             html_content, html_len = length_filter(html_content, max_token=3800)
-            # print(html_len)
+            # logger.debug(html_len)
             if html_content is not None:
                 final_list.append(html_content)
     except:

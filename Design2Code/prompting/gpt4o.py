@@ -7,6 +7,9 @@ from openai import OpenAI, AzureOpenAI
 import argparse
 import retry
 import shutil 
+import logging
+
+logger = logging.getLogger(__name__)
 
 @retry.retry(tries=3, delay=2)
 def gpt4o_call(openai_client, base64_image, prompt):
@@ -339,11 +342,11 @@ if __name__ == "__main__":
 
 				with open(os.path.join(predictions_dir, filename.replace(".png", ".html")), "w") as f:
 					f.write(html)
-				print(f'file saved to {os.path.join(predictions_dir, filename.replace(".png", ".html"))}')
+				logger.debug(f'file saved to {os.path.join(predictions_dir, filename.replace(".png", ".html"))}')
 				if args.take_screenshot:
 					take_screenshot(os.path.join(predictions_dir, filename.replace(".png", ".html")), os.path.join(predictions_dir, filename), do_it_again=True)
 			except Exception as e:
-				print(f"An error occurred during processing: {e}")
+				logger.debug(f"An error occurred during processing: {e}")
 				continue 
 
 	## save usage

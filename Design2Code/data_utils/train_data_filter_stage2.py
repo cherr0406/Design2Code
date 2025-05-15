@@ -4,7 +4,9 @@ from multiprocessing import Pool
 import contextlib, joblib
 from joblib import Parallel, delayed
 from tqdm import tqdm
+import logging
 
+logger = logging.getLogger(__name__)
 
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
@@ -39,13 +41,13 @@ def filter_s2_and_save(html_file):
                         with open(f"/juice2/scr2/nlp/pix2code/zyanzhe/c4-train-html-s1-part00-v1.2/{c_name}", "w") as f:
                             f.write(html_content)
         else:
-            print(html_file, "not valid")
+            logger.debug(html_file, "not valid")
     except:
         pass
 
 input_list = os.listdir("/juice2/scr2/nlp/pix2code/zyanzhe/c4-train-html-s1-part00")
 input_list = [os.path.join("/juice2/scr2/nlp/pix2code/zyanzhe/c4-train-html-s1-part00", item) for item in input_list]
-print(input_list[:5])
+logger.debug(input_list[:5])
 
 with tqdm_joblib(tqdm(total=len(input_list))) as progress_bar:
     res = list(tqdm(Parallel(n_jobs=16)(delayed(filter_s2_and_save)(inputs) for inputs in input_list), total=len(input_list)))

@@ -1,6 +1,9 @@
 import difflib
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 def map_positions(clean_text, original_text):
     """
@@ -58,8 +61,8 @@ def check_repetitive_content(file_path, chunk_size=100, repetition_threshold=5, 
     repetitive, start_position = repetitive_start != len(content_no_html), repetitive_start
 
     if repetitive:
-        print(f"[Warning] Repetitive content found in {file_path}, start at {start_position}")
-        print(f"[Warning] You might want to manually check whether the automatic repetition removal is correct.")
+        logger.debug(f"[Warning] Repetitive content found in {file_path}, start at {start_position}")
+        logger.debug("[Warning] You might want to manually check whether the automatic repetition removal is correct.")
         if not debug:
             os.rename(file_path, file_path.replace(".html", "_old.txt"))
             with open(file_path, 'w', encoding='utf-8') as file:

@@ -13,6 +13,9 @@ import mimetypes
 import base64
 from PIL import Image
 import PIL
+import logging
+
+logger = logging.getLogger(__name__)
 
 def encode_image(image_path: str, max_size: int = 8000):
     """Encodes an image to base64, rescaling if necessary, and determines the correct MIME type."""
@@ -329,7 +332,7 @@ if __name__ == "__main__":
         # print (filename)
 
         if os.path.exists(os.path.join(predictions_dir, filename.replace(".png", ".html"))) and os.path.exists(os.path.join(predictions_dir, filename)):
-            print(filename, "already exist!")
+            logger.debug(filename, "already exist!")
             counter += 1
             continue
         
@@ -349,8 +352,8 @@ if __name__ == "__main__":
                 take_screenshot(os.path.join(predictions_dir, filename.replace(".png", ".html")), os.path.join(predictions_dir, filename))
             counter += 1
         except Exception as e:
-            print(filename)
-            print(f"Function failed after retries: {e}")
+            logger.debug(filename)
+            logger.debug(f"Function failed after retries: {e}")
             continue
             # continue 
 

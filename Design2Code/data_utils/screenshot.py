@@ -2,6 +2,9 @@ from playwright.sync_api import sync_playwright
 import os
 from tqdm import tqdm
 from PIL import Image
+import logging
+
+logger = logging.getLogger(__name__)
 
 def take_screenshot(url, output_file="screenshot.png", do_it_again=False):
     # Convert local path to file:// URL if it's a file
@@ -10,7 +13,7 @@ def take_screenshot(url, output_file="screenshot.png", do_it_again=False):
 
     # whether to overwrite existing screenshots
     if os.path.exists(output_file) and not do_it_again:
-        print(f"{output_file} exists!")
+        logger.debug(f"{output_file} exists!")
         return
 
     try:
@@ -27,7 +30,7 @@ def take_screenshot(url, output_file="screenshot.png", do_it_again=False):
 
             browser.close()
     except Exception as e: 
-        print(f"Failed to take screenshot due to: {e}. Generating a blank image.")
+        logger.debug(f"Failed to take screenshot due to: {e}. Generating a blank image.")
         # Generate a blank image 
         img = Image.new('RGB', (1280, 960), color = 'white')
         img.save(output_file)

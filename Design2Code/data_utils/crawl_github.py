@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import logging
 from playwright.sync_api import sync_playwright
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from github import Github, GithubException
@@ -15,6 +16,7 @@ BACKOFF_FACTOR = 2  # Exponential backoff multiplier
 
 MAX_WORKERS = 32
 
+logger = logging.getLogger(__name__)
 
 gh = Github(GITHUB_TOKEN)
 
@@ -28,16 +30,16 @@ def api_request_with_retry(url, headers):
             # Handle rate limiting
             reset_time = int(response.headers.get('X-RateLimit-Reset', time.time() + 60))
             sleep_duration = max(reset_time - time.time(), 60) * BACKOFF_FACTOR ** retries  # Wait at least 60 seconds
-            print(f"Rate limit reached. Sleeping for {sleep_duration} seconds.")
+            logger.debug(f"Rate limit reached. Sleeping for {sleep_duration} seconds.")
             time.sleep(sleep_duration)
         elif response.status_code >= 500:
             # Retry on server errors
             retries += 1
             sleep_duration = BACKOFF_FACTOR ** retries
-            print(f"Server error {response.status_code}. Retrying in {sleep_duration} seconds...")
+            logger.debug(f"Server error {response.status_code}. Retrying in {sleep_duration} seconds...")
             time.sleep(sleep_duration)
         else:
-            print(f"Error fetching {url}: {response.status_code} - {response.text}")
+            logger.debug(f"Error fetching {url}: {response.status_code} - {response.text}")
             return None
     return None
 
@@ -63,7 +65,7 @@ def get_github_io_sites():
     for date_range in date_ranges:
         for page in range(1, 11):  # 10 pages of 100 results each
             url = f"https://api.github.com/search/repositories?q=github.io+in:name+created:{date_range}&page={page}&per_page=100"
-            print(f"Fetching url: {url}")
+            logger.debug(f"Fetching url: {url}")
             response = api_request_with_retry(url, headers)
             if response and response.status_code == 200:
                 data = response.json()
@@ -74,7 +76,7 @@ def get_github_io_sites():
                     if repo['name'].endswith('.github.io'):
                         github_io_sites.append(repo)
             elif response is None:
-                print("Failed to fetch repositories after retries. Exiting.")
+                logger.debug("Failed to fetch repositories after retries. Exiting.")
                 break
     return github_io_sites
 
@@ -97,24 +99,24 @@ def process_site(repo):
     
     site_url = f"https://{repo['name']}"
     if check_license(repo):
-        # print(f"Processing: {site_url}")
+        # logger.debug(f"Processing: {site_url}")
         html_content = fetch_and_embed_css(site_url)
         repo_name = repo['name'].replace(".github.io", "")
         if html_content:
-            # print(f"Successfully processed {site_url}")
+            # logger.debug(f"Successfully processed {site_url}")
             with open(f'{base_dir}/{repo_name}.html', 'w') as f:
                 f.write(html_content)
             take_screenshot(f'{base_dir}/{repo_name}.html', f'{base_dir}/{repo_name}.png', do_it_again=True)
         else:
-            print(f"Failed to process {site_url}")
+            logger.debug(f"Failed to process {site_url}")
     else:
-        print(f"License check failed for {site_url}, skipping.")
+        logger.debug(f"License check failed for {site_url}, skipping.")
         
 
 def main():
     
     sites = get_github_io_sites()
-    print(f"There are a total of {len(sites)} sites")
+    logger.debug(f"There are a total of {len(sites)} sites")
     # sites = sites[:16]
     
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -124,7 +126,7 @@ def main():
                 try:
                     future.result()  # Retrieve the result to catch exceptions
                 except Exception as e:
-                    print(f"An error occurred during processing: {e}")
+                    logger.debug(f"An error occurred during processing: {e}")
                 finally:
                     pbar.update(1)  # Update the progress bar
     
@@ -132,11 +134,11 @@ def main():
     # for repo in sites:
     #     if check_license(repo):
     #         site_url = f"https://{repo['name']}"
-    #         print(f"Processing: {site_url}")
+    #         logger.debug(f"Processing: {site_url}")
     #         html_content = fetch_and_embed_css(site_url)
     #         repo_name = repo['name'].replace(".github.io", "")
     #         if html_content:
-    #             print(f"Successfully processed {site_url}")
+    #             logger.debug(f"Successfully processed {site_url}")
     #             with open(f'{base_dir}/{repo_name}.html', 'w') as f:
     #                 f.write(html_content)
     #             take_screenshot(f'{base_dir}/{repo_name}.html', f'{base_dir}/{repo_name}.png')
@@ -144,7 +146,7 @@ def main():
     #             if count >= 10:
     #                 break
     #         else:
-    #             print(f"Failed to process {site_url}")
+    #             logger.debug(f"Failed to process {site_url}")
 
 if __name__ == '__main__':
     main()

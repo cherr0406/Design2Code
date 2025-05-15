@@ -4,7 +4,9 @@ from PIL import Image, ImageColor
 import os
 from bs4 import BeautifulSoup, NavigableString, Tag, Comment
 from pathlib import Path
+import logging
 
+logger = logging.getLogger(__name__)
 
 def rgb_to_hex(rgb):
     """Convert an RGB tuple to hexadecimal format."""
@@ -71,7 +73,7 @@ def find_different_pixels(image1_path, image2_path):
 
     # Ensure both images are of the same size
     if img1.size != img2.size:
-        print(f"[Warning] Images are not the same size, {image1_path}, {image2_path}")
+        logger.debug(f"[Warning] Images are not the same size, {image1_path}, {image2_path}")
         return None
 
     # Convert images to RGB if they are not
@@ -117,7 +119,7 @@ def extract_text_with_color(html_file):
                             color = ImageColor.getrgb(color)  # Convert named color to RGB
                         return '#{:02x}{:02x}{:02x}'.format(*color)  # Convert RGB to hexadecimal
                     except ValueError:
-                        print(f"Warning: unable to identify or convert color in {html_file}...", color)
+                        logger.debug(f"Warning: unable to identify or convert color in {html_file}...", color)
                         return None
         return None
 
@@ -243,7 +245,7 @@ def get_blocks_ocr_free(image_path):
     different_pixels = find_different_pixels(p_png, p_png_1)
 
     if different_pixels is None:
-        print(f"[Warning] Unable to get pixels with different colors from {p_png}, {p_png_1}...")
+        logger.debug(f"[Warning] Unable to get pixels with different colors from {p_png}, {p_png_1}...")
         os.system(f"rm {p_html} {p_png} {p_html_1} {p_png_1}")
         return []
 
@@ -251,7 +253,7 @@ def get_blocks_ocr_free(image_path):
     try:
         blocks = get_blocks_from_image_diff_pixels(p_png, html_text_color_tree, different_pixels)
     except:
-        print(f"[Warning] Unable to get blocks from {p_png}...")
+        logger.debug(f"[Warning] Unable to get blocks from {p_png}...")
         os.system(f"rm {p_html} {p_png} {p_html_1} {p_png_1}")
         return []
 
