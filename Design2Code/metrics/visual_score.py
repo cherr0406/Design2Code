@@ -255,7 +255,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
 
         matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
         if debug:
-            logger.debug("Current cost of the solution:", current_cost)
+            logger.debug(f"Current cost of the solution: {current_cost}")
             print_matching(matching, A, B, cost_matrix)
     
         if len(A) >= 2:
@@ -270,7 +270,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 if  diff > 0.05:
                     merge_list.append([i, i + 1, diff])
                     if debug:
-                        logger.debug(new_A[i]['text'], diff)
+                        logger.debug(f"{new_A[i]['text']} {diff}")
 
             merge_list.sort(key=sortFn, reverse=True)
             if len(merge_list) > 0:
@@ -278,7 +278,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 A = merge_blocks_by_list(A, merge_list)
                 matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
                 if debug:
-                    logger.debug("Cost after optimization A:", current_cost)
+                    logger.debug(f"Cost after optimization A: {current_cost}")
 
         if len(B) >= 2:
             merge_list = []
@@ -292,7 +292,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 if diff > 0.05:
                     merge_list.append([i, i + 1, diff])
                     if debug:
-                        logger.debug(new_B[i]['text'], diff)
+                        logger.debug(f"{new_B[i]['text']} {diff}")
 
             merge_list.sort(key=sortFn, reverse=True)
             if len(merge_list) > 0:
@@ -300,7 +300,7 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 B = merge_blocks_by_list(B, merge_list)
                 matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
                 if debug:
-                    logger.debug("Cost after optimization B:", current_cost)
+                    logger.debug(f"Cost after optimization B: {current_cost}")
 
         if not A_changed and not B_changed:
             break
@@ -466,12 +466,12 @@ def visual_eval_v3_multi(
 
     for k, predict_blocks in enumerate(predict_blocks_list):
         if len(predict_blocks) == 0:
-            logger.warning("[Warning] No detected blocks in: ", predict_img_list[k])
+            logger.warning(f"[Warning] No detected blocks in: {predict_img_list[k]}")
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
         elif len(original_blocks) == 0:
-            logger.warning("[Warning] No detected blocks in: ", original_img)
+            logger.warning(f"[Warning] No detected blocks in: {original_img}")
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
@@ -580,7 +580,7 @@ def visual_eval_v3_multi(
                 )
             ))
         else:
-            logger.warning("[Warning] No matched blocks in: ", predict_img_list[k])
+            logger.warning(f"[Warning] No matched blocks in: {predict_img_list[k]}")
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
     return return_score_list
