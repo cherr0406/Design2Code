@@ -30,13 +30,12 @@ def tqdm_joblib(tqdm_object):
 
 def print_multi_score(multi_score):
     _, final_size_score, final_matched_text_score, final_position_score, final_text_color_score, final_clip_score = multi_score
-    logger.debug()
-    logger.debug("Block-Match: ", final_size_score)
-    logger.debug("Text: ", final_matched_text_score)
-    logger.debug("Position: ", final_position_score)
-    logger.debug("Color: ", final_text_color_score)
-    logger.debug("CLIP: ", final_clip_score)
-    logger.debug("--------------------------------\n")
+    print(f"Block-Match: {final_size_score}")
+    print(f"Text: {final_matched_text_score}")
+    print(f"Position: {final_position_score}")
+    print(f"Color: {final_text_color_score}")
+    print(f"CLIP: {final_clip_score}")
+    print("--------------------------------\n")
 
 if __name__ == "__main__":
     debug = False

@@ -61,7 +61,7 @@ if __name__ == "__main__":
             cache_dir=cache_dir
         ).to(DEVICE).eval()
 
-    logger.debug ("parameter count: ", model.num_parameters())
+    logger.debug(f"parameter count: {model.num_parameters()}")
 
     test_dir = "/nlp/scr/clsi/Pix2Code/testset_final"
     prediction_dir = "/nlp/scr/clsi/Pix2Code/cogagent_predictions_full"
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             query = direct_prompt
             history = []
 
-            logger.debug ("Doing inference on: ", image_path)
+            logger.debug(f"Doing inference on: {image_path}")
             input_by_model = model.build_conversation_input_ids(tokenizer, query=query, history=history, images=[image])
             inputs = {
                 'input_ids': input_by_model['input_ids'].unsqueeze(0).to(DEVICE),

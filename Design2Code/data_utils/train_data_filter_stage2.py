@@ -41,7 +41,7 @@ def filter_s2_and_save(html_file):
                         with open(f"/juice2/scr2/nlp/pix2code/zyanzhe/c4-train-html-s1-part00-v1.2/{c_name}", "w") as f:
                             f.write(html_content)
         else:
-            logger.debug(html_file, "not valid")
+            logger.debug(f"{html_file} not valid")
     except:
         pass
 

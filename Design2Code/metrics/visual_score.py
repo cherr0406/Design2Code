@@ -1,36 +1,35 @@
 from typing import Callable
+
 import cv2
 import numpy as np
 
 from Design2Code.metrics.screenshot_single import take_screenshot
 
+
 # This is a patch for color map, which is not updated for newer version of numpy
 def patch_asscalar(a):
     return a.item()
+
+
 setattr(np, "asscalar", patch_asscalar)
 
-import matplotlib.pyplot as plt
-from scipy.optimize import linear_sum_assignment
-import random
-import os
-from sklearn.metrics.pairwise import cosine_similarity
-from difflib import SequenceMatcher
-from tqdm import tqdm 
-from pathlib import Path
-from PIL import Image, ImageDraw
-import torch
-import clip
-from copy import deepcopy
-from collections import Counter
-from Design2Code.metrics.ocr_free_utils import get_blocks_ocr_free
-from Design2Code.data_utils.dedup_post_gen import check_repetitive_content
-from bs4 import BeautifulSoup, NavigableString, Comment
-import re
-import math
 import logging
-from colormath.color_objects import sRGBColor, LabColor
+import random
+import re
+from collections import Counter
+from copy import deepcopy
+from difflib import SequenceMatcher
+
+import clip
+import torch
+from bs4 import BeautifulSoup, Comment, NavigableString
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000
+from colormath.color_objects import LabColor, sRGBColor
+from PIL import Image
+from scipy.optimize import linear_sum_assignment
+
+from Design2Code.metrics.ocr_free_utils import get_blocks_ocr_free
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ model, preprocess = clip.load("ViT-B/32", device=device)
 
 
 def calculate_similarity(block1, block2, max_distance=1.42):
-    text_similarity = SequenceMatcher(None, block1['text'], block2['text']).ratio()
+    text_similarity = SequenceMatcher(None, block1["text"], block2["text"]).ratio()
     return text_similarity
 
 
@@ -55,15 +54,21 @@ def adjust_cost_for_context(cost_matrix, consecutive_bonus=1.0, window_size=20):
             bonus = 0
             if adjusted_cost_matrix[i][j] >= -0.5:
                 continue
-            nearby_matrix = cost_matrix[max(0, i - window_size):min(n, i + window_size + 1), max(0, j - window_size):min(m, j + window_size + 1)]
+            nearby_matrix = cost_matrix[
+                max(0, i - window_size) : min(n, i + window_size + 1),
+                max(0, j - window_size) : min(m, j + window_size + 1),
+            ]
             flattened_array = nearby_matrix.flatten()
             sorted_array = np.sort(flattened_array)[::-1]
-            sorted_array = np.delete(sorted_array, np.where(sorted_array == cost_matrix[i, j])[0][0])
-            top_k_elements = sorted_array[- window_size * 2:]
+            sorted_array = np.delete(
+                sorted_array, np.where(sorted_array == cost_matrix[i, j])[0][0]
+            )
+            top_k_elements = sorted_array[-window_size * 2 :]
             sum_top_k = np.sum(top_k_elements)
             bonus = consecutive_bonus * sum_top_k
             adjusted_cost_matrix[i][j] += bonus
     return adjusted_cost_matrix
+
 
 def create_cost_matrix(A, B):
     n = len(A)
@@ -82,7 +87,6 @@ def draw_matched_bboxes(img1, img2, matched_bboxes):
 
     h1, w1, _ = img1.shape
     h2, w2, _ = img2.shape
-    
 
     # Iterate over matched bounding boxes
     for bbox_pair in matched_bboxes:
@@ -90,8 +94,18 @@ def draw_matched_bboxes(img1, img2, matched_bboxes):
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
         # Ensure that the bounding box coordinates are integers
-        bbox1 = [int(bbox_pair[0][0] * w1), int(bbox_pair[0][1] * h1), int(bbox_pair[0][2] * w1), int(bbox_pair[0][3] * h1)]
-        bbox2 = [int(bbox_pair[1][0] * w2), int(bbox_pair[1][1] * h2), int(bbox_pair[1][2] * w2), int(bbox_pair[1][3] * h2)]
+        bbox1 = [
+            int(bbox_pair[0][0] * w1),
+            int(bbox_pair[0][1] * h1),
+            int(bbox_pair[0][2] * w1),
+            int(bbox_pair[0][3] * h1),
+        ]
+        bbox2 = [
+            int(bbox_pair[1][0] * w2),
+            int(bbox_pair[1][1] * h2),
+            int(bbox_pair[1][2] * w2),
+            int(bbox_pair[1][3] * h2),
+        ]
 
         # Draw bbox on the first image
         top_left_1 = (bbox1[0], bbox1[1])
@@ -122,11 +136,12 @@ def rgb_to_lab(rgb):
     """
     # Create an sRGBColor object from RGB values
     rgb_color = sRGBColor(rgb[0], rgb[1], rgb[2], is_upscaled=True)
-    
+
     # Convert to Lab color space
     lab_color = convert_color(rgb_color, LabColor)
-    
+
     return lab_color
+
 
 def color_similarity_ciede2000(rgb1, rgb2):
     """
@@ -136,16 +151,16 @@ def color_similarity_ciede2000(rgb1, rgb2):
     # Convert RGB colors to Lab
     lab1 = rgb_to_lab(rgb1)
     lab2 = rgb_to_lab(rgb2)
-    
+
     # Calculate the Delta E (CIEDE2000)
     delta_e = delta_e_cie2000(lab1, lab2)
-    
+
     # Normalize the Delta E value to get a similarity score
     # Note: The normalization method here is arbitrary and can be adjusted based on your needs.
     # A delta_e of 0 means identical colors. Higher values indicate more difference.
     # For visualization purposes, we consider a delta_e of 100 to be completely different.
     similarity = max(0, 1 - (delta_e / 100))
-    
+
     return similarity
 
 
@@ -155,21 +170,26 @@ def calculate_current_cost(cost_matrix, row_ind, col_ind):
 
 def merge_blocks_wo_check(block1, block2):
     # Concatenate text
-    merged_text = block1['text'] + " " + block2['text']
+    merged_text = block1["text"] + " " + block2["text"]
 
     # Calculate bounding box
-    x_min = min(block1['bbox'][0], block2['bbox'][0])
-    y_min = min(block1['bbox'][1], block2['bbox'][1])
-    x_max = max(block1['bbox'][0] + block1['bbox'][2], block2['bbox'][0] + block2['bbox'][2])
-    y_max = max(block1['bbox'][1] + block1['bbox'][3], block2['bbox'][1] + block2['bbox'][3])
+    x_min = min(block1["bbox"][0], block2["bbox"][0])
+    y_min = min(block1["bbox"][1], block2["bbox"][1])
+    x_max = max(
+        block1["bbox"][0] + block1["bbox"][2], block2["bbox"][0] + block2["bbox"][2]
+    )
+    y_max = max(
+        block1["bbox"][1] + block1["bbox"][3], block2["bbox"][1] + block2["bbox"][3]
+    )
     merged_bbox = (x_min, y_min, x_max - x_min, y_max - y_min)
 
     # Average color
     merged_color = tuple(
-        (color1 + color2) // 2 for color1, color2 in zip(block1['color'], block2['color'])
+        (color1 + color2) // 2
+        for color1, color2 in zip(block1["color"], block2["color"])
     )
 
-    return {'text': merged_text, 'bbox': merged_bbox, 'color': merged_color}
+    return {"text": merged_text, "bbox": merged_bbox, "color": merged_color}
 
 
 def calculate_current_cost(cost_matrix, row_ind, col_ind):
@@ -200,22 +220,29 @@ def merge_blocks_by_list(blocks, merge_list):
 
         i = merge_list[0][0]
         j = merge_list[0][1]
-    
+
         blocks[i] = merge_blocks_wo_check(blocks[i], blocks[j])
         pop_list.append(j)
-    
+
         merge_list.pop(0)
         if len(merge_list) > 0:
             new_merge_list = []
             for k in range(len(merge_list)):
-                if merge_list[k][0] != i and merge_list[k][1] != i and merge_list[k][0] != j and merge_list[k][1] != j:
+                if (
+                    merge_list[k][0] != i
+                    and merge_list[k][1] != i
+                    and merge_list[k][0] != j
+                    and merge_list[k][1] != j
+                ):
                     new_merge_list.append(merge_list[k])
             merge_list = new_merge_list
 
 
 def print_matching(matching, blocks1, blocks2, cost_matrix):
     for i, j in matching:
-        logger.debug(f"{blocks1[i]} matched with {blocks2[j]}, cost {cost_matrix[i][j]}")
+        logger.debug(
+            f"{blocks1[i]} matched with {blocks2[j]}, cost {cost_matrix[i][j]}"
+        )
 
 
 def difference_of_means(list1, list2):
@@ -253,21 +280,25 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
         A_changed = False
         B_changed = False
 
-        matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
+        matching, current_cost, cost_matrix = find_maximum_matching(
+            A, B, merge_bonus, merge_windows
+        )
         if debug:
             logger.debug(f"Current cost of the solution: {current_cost}")
             print_matching(matching, A, B, cost_matrix)
-    
+
         if len(A) >= 2:
             merge_list = []
             for i in range(len(A) - 1):
                 new_A = deepcopy(A)
                 new_A[i] = merge_blocks_wo_check(new_A[i], new_A[i + 1])
                 new_A.pop(i + 1)
-    
-                updated_matching, updated_cost, cost_matrix = find_maximum_matching(new_A, B, merge_bonus, merge_windows)
+
+                updated_matching, updated_cost, cost_matrix = find_maximum_matching(
+                    new_A, B, merge_bonus, merge_windows
+                )
                 diff = difference_of_means(current_cost, updated_cost)
-                if  diff > 0.05:
+                if diff > 0.05:
                     merge_list.append([i, i + 1, diff])
                     if debug:
                         logger.debug(f"{new_A[i]['text']} {diff}")
@@ -276,7 +307,9 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
             if len(merge_list) > 0:
                 A_changed = True
                 A = merge_blocks_by_list(A, merge_list)
-                matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
+                matching, current_cost, cost_matrix = find_maximum_matching(
+                    A, B, merge_bonus, merge_windows
+                )
                 if debug:
                     logger.debug(f"Cost after optimization A: {current_cost}")
 
@@ -286,8 +319,10 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
                 new_B = deepcopy(B)
                 new_B[i] = merge_blocks_wo_check(new_B[i], new_B[i + 1])
                 new_B.pop(i + 1)
-    
-                updated_matching, updated_cost, cost_matrix = find_maximum_matching(A, new_B, merge_bonus, merge_windows)
+
+                updated_matching, updated_cost, cost_matrix = find_maximum_matching(
+                    A, new_B, merge_bonus, merge_windows
+                )
                 diff = difference_of_means(current_cost, updated_cost)
                 if diff > 0.05:
                     merge_list.append([i, i + 1, diff])
@@ -298,7 +333,9 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
             if len(merge_list) > 0:
                 B_changed = True
                 B = merge_blocks_by_list(B, merge_list)
-                matching, current_cost, cost_matrix = find_maximum_matching(A, B, merge_bonus, merge_windows)
+                matching, current_cost, cost_matrix = find_maximum_matching(
+                    A, B, merge_bonus, merge_windows
+                )
                 if debug:
                     logger.debug(f"Cost after optimization B: {current_cost}")
 
@@ -310,15 +347,17 @@ def find_possible_merge(A, B, consecutive_bonus, window_size, debug=False):
 
 def merge_blocks_by_bbox(blocks):
     merged_blocks = {}
-    
+
     # Traverse and merge blocks
     for block in blocks:
-        bbox = tuple(block['bbox'])  # Convert bbox to tuple for hashability
+        bbox = tuple(block["bbox"])  # Convert bbox to tuple for hashability
         if bbox in merged_blocks:
             # Merge with existing block
             existing_block = merged_blocks[bbox]
-            existing_block['text'] += ' ' + block['text']
-            existing_block['color'] = [(ec + c) / 2 for ec, c in zip(existing_block['color'], block['color'])]
+            existing_block["text"] += " " + block["text"]
+            existing_block["color"] = [
+                (ec + c) / 2 for ec, c in zip(existing_block["color"], block["color"])
+            ]
         else:
             # Add new block
             merged_blocks[bbox] = block
@@ -342,13 +381,15 @@ def mask_bounding_boxes_with_inpainting(image, bounding_boxes):
         y = int(y_ratio * height)
         w = int(w_ratio * width)
         h = int(h_ratio * height)
-        mask[y:y+h, x:x+w] = 255
+        mask[y : y + h, x : x + w] = 255
 
     # Use inpainting
     inpainted_image = cv2.inpaint(image_cv, mask, 3, cv2.INPAINT_TELEA)
 
     # Convert back to PIL format
-    inpainted_image_pil = Image.fromarray(cv2.cvtColor(inpainted_image, cv2.COLOR_BGR2RGB))
+    inpainted_image_pil = Image.fromarray(
+        cv2.cvtColor(inpainted_image, cv2.COLOR_BGR2RGB)
+    )
 
     return inpainted_image_pil
 
@@ -378,8 +419,16 @@ def rescale_and_mask(image_path, blocks):
 
 def calculate_clip_similarity_with_blocks(image_path1, image_path2, blocks1, blocks2):
     # Load and preprocess images
-    image1 = preprocess(rescale_and_mask(image_path1, [block['bbox'] for block in blocks1])).unsqueeze(0).to(device)
-    image2 = preprocess(rescale_and_mask(image_path2, [block['bbox'] for block in blocks2])).unsqueeze(0).to(device)
+    image1 = (
+        preprocess(rescale_and_mask(image_path1, [block["bbox"] for block in blocks1]))
+        .unsqueeze(0)
+        .to(device)
+    )
+    image2 = (
+        preprocess(rescale_and_mask(image_path2, [block["bbox"] for block in blocks2]))
+        .unsqueeze(0)
+        .to(device)
+    )
 
     # Calculate features
     with torch.no_grad():
@@ -402,7 +451,7 @@ def truncate_repeated_html_elements(soup, max_count=50):
     for element in soup.find_all(True):
         if isinstance(element, (NavigableString, Comment)):
             continue
-        
+
         try:
             element_html = str(element)
         except:
@@ -417,29 +466,29 @@ def truncate_repeated_html_elements(soup, max_count=50):
 
 
 def make_html(filename):
-    with open(filename, 'r') as file:
+    with open(filename, "r") as file:
         content = file.read()
 
-    if not re.search(r'<html[^>]*>', content, re.IGNORECASE):
-        new_content = f'<html><body><p>{content}</p></body></html>'
-        with open(filename, 'w') as file:
+    if not re.search(r"<html[^>]*>", content, re.IGNORECASE):
+        new_content = f"<html><body><p>{content}</p></body></html>"
+        with open(filename, "w") as file:
             file.write(new_content)
 
 
 def pre_process(html_file):
     # check_repetitive_content(html_file)
     make_html(html_file)
-    with open(html_file, 'r') as file:
-        soup = BeautifulSoup(file, 'html.parser')
+    with open(html_file, "r") as file:
+        soup = BeautifulSoup(file, "html.parser")
     soup_str = truncate_repeated_html_elements(soup)
-    with open(html_file, 'w') as file:
+    with open(html_file, "w") as file:
         file.write(soup_str)
 
 
 def visual_eval_v3_multi(
     input_list: tuple[list[str], str],
-    debug: bool = False, 
-    take_screenshot_func: Callable[[str, str], None] = take_screenshot
+    debug: bool = False,
+    take_screenshot_func: Callable[[str, str], None] = take_screenshot,
 ) -> list[tuple[float, float, tuple[float, float, float, float, float]]]:
     predict_html_list: list[str] = input_list[0]
     original_html: str = input_list[1]
@@ -462,30 +511,48 @@ def visual_eval_v3_multi(
     # Consider context similarity for block matching
     consecutive_bonus, window_size = 0.1, 1
 
-    return_score_list: list[tuple[float, float, tuple[float, float, float, float, float]]] = []
+    return_score_list: list[
+        tuple[float, float, tuple[float, float, float, float, float]]
+    ] = []
 
     for k, predict_blocks in enumerate(predict_blocks_list):
         if len(predict_blocks) == 0:
             logger.warning(f"[Warning] No detected blocks in: {predict_img_list[k]}")
-            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
+            final_clip_score = calculate_clip_similarity_with_blocks(
+                predict_img_list[k], original_img, predict_blocks, original_blocks
+            )
+            return_score_list.append(
+                (0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score))
+            )
             continue
         elif len(original_blocks) == 0:
             logger.warning(f"[Warning] No detected blocks in: {original_img}")
-            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
+            final_clip_score = calculate_clip_similarity_with_blocks(
+                predict_img_list[k], original_img, predict_blocks, original_blocks
+            )
+            return_score_list.append(
+                (0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score))
+            )
             continue
 
         if debug:
             logger.debug(predict_blocks)
             logger.debug(original_blocks)
-    
+
         predict_blocks = merge_blocks_by_bbox(predict_blocks)
-        predict_blocks_m, original_blocks_m, matching = find_possible_merge(predict_blocks, deepcopy(original_blocks), consecutive_bonus, window_size, debug=debug)
-        
+        predict_blocks_m, original_blocks_m, matching = find_possible_merge(
+            predict_blocks,
+            deepcopy(original_blocks),
+            consecutive_bonus,
+            window_size,
+            debug=debug,
+        )
+
         filtered_matching = []
         for i, j in matching:
-            text_similarity = SequenceMatcher(None, predict_blocks_m[i]['text'], original_blocks_m[j]['text']).ratio()
+            text_similarity = SequenceMatcher(
+                None, predict_blocks_m[i]["text"], original_blocks_m[j]["text"]
+            ).ratio()
             # Filter out matching with low similarity
             if text_similarity < 0.5:
                 continue
@@ -501,46 +568,84 @@ def visual_eval_v3_multi(
         matched_text_scores = []
         position_scores = []
         text_color_scores = []
-    
+
         unmatched_area_1 = 0.0
         for i in range(len(predict_blocks_m)):
             if i not in indices1:
-                unmatched_area_1 += predict_blocks_m[i]['bbox'][2] * predict_blocks_m[i]['bbox'][3]
+                unmatched_area_1 += (
+                    predict_blocks_m[i]["bbox"][2] * predict_blocks_m[i]["bbox"][3]
+                )
         unmatched_area_2 = 0.0
         for j in range(len(original_blocks_m)):
             if j not in indices2:
-                unmatched_area_2 += original_blocks_m[j]['bbox'][2] * original_blocks_m[j]['bbox'][3]
+                unmatched_area_2 += (
+                    original_blocks_m[j]["bbox"][2] * original_blocks_m[j]["bbox"][3]
+                )
         sum_areas.append(unmatched_area_1 + unmatched_area_2)
-    
+
         for i, j, text_similarity in matching:
-            sum_block_area = predict_blocks_m[i]['bbox'][2] * predict_blocks_m[i]['bbox'][3] + original_blocks_m[j]['bbox'][2] * original_blocks_m[j]['bbox'][3]
+            sum_block_area = (
+                predict_blocks_m[i]["bbox"][2] * predict_blocks_m[i]["bbox"][3]
+                + original_blocks_m[j]["bbox"][2] * original_blocks_m[j]["bbox"][3]
+            )
 
             # Consider the max postion shift, either horizontally or vertically
-            position_similarity = 1 - calculate_distance_max_1d(predict_blocks_m[i]['bbox'][0] + predict_blocks_m[i]['bbox'][2] / 2, \
-                                                    predict_blocks_m[i]['bbox'][1] + predict_blocks_m[i]['bbox'][3] / 2, \
-                                                    original_blocks_m[j]['bbox'][0] + original_blocks_m[j]['bbox'][2] / 2, \
-                                                    original_blocks_m[j]['bbox'][1] + original_blocks_m[j]['bbox'][3] / 2)
+            position_similarity = 1 - calculate_distance_max_1d(
+                predict_blocks_m[i]["bbox"][0] + predict_blocks_m[i]["bbox"][2] / 2,
+                predict_blocks_m[i]["bbox"][1] + predict_blocks_m[i]["bbox"][3] / 2,
+                original_blocks_m[j]["bbox"][0] + original_blocks_m[j]["bbox"][2] / 2,
+                original_blocks_m[j]["bbox"][1] + original_blocks_m[j]["bbox"][3] / 2,
+            )
             # Normalized ciede2000 formula
-            text_color_similarity = color_similarity_ciede2000(predict_blocks_m[i]['color'], original_blocks_m[j]['color'])
-            matched_list.append([predict_blocks_m[i]['bbox'], original_blocks_m[j]['bbox']])
-    
+            text_color_similarity = color_similarity_ciede2000(
+                predict_blocks_m[i]["color"], original_blocks_m[j]["color"]
+            )
+            matched_list.append(
+                [predict_blocks_m[i]["bbox"], original_blocks_m[j]["bbox"]]
+            )
+
             # validation check
-            if min(predict_blocks_m[i]['bbox'][2], original_blocks_m[j]['bbox'][2], predict_blocks_m[i]['bbox'][3], original_blocks_m[j]['bbox'][3]) == 0:
-                logger.debug(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
-            assert calculate_ratio(predict_blocks_m[i]['bbox'][2], original_blocks_m[j]['bbox'][2]) > 0 and calculate_ratio(predict_blocks_m[i]['bbox'][3], original_blocks_m[j]['bbox'][3]) > 0, f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}"
-    
+            if (
+                min(
+                    predict_blocks_m[i]["bbox"][2],
+                    original_blocks_m[j]["bbox"][2],
+                    predict_blocks_m[i]["bbox"][3],
+                    original_blocks_m[j]["bbox"][3],
+                )
+                == 0
+            ):
+                logger.debug(
+                    f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}"
+                )
+            assert (
+                calculate_ratio(
+                    predict_blocks_m[i]["bbox"][2], original_blocks_m[j]["bbox"][2]
+                )
+                > 0
+                and calculate_ratio(
+                    predict_blocks_m[i]["bbox"][3], original_blocks_m[j]["bbox"][3]
+                )
+                > 0
+            ), f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}"
+
             sum_areas.append(sum_block_area)
             matched_areas.append(sum_block_area)
             matched_text_scores.append(text_similarity)
             position_scores.append(position_similarity)
             text_color_scores.append(text_color_similarity)
-    
+
             if debug:
-                logger.debug(f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}")
-                logger.debug(SequenceMatcher(None, predict_blocks_m[i]['text'], original_blocks_m[j]['text']).ratio())
-                logger.debug("text similarity score", text_similarity)
-                logger.debug("position score", position_similarity)
-                logger.debug("color score", text_color_similarity)
+                logger.debug(
+                    f"{predict_blocks_m[i]} matched with {original_blocks_m[j]}"
+                )
+                logger.debug(
+                    SequenceMatcher(
+                        None, predict_blocks_m[i]["text"], original_blocks_m[j]["text"]
+                    ).ratio()
+                )
+                logger.debug(f"text similarity score: {text_similarity}")
+                logger.debug(f"position score: {position_similarity}")
+                logger.debug(f"color score: {text_color_similarity}")
                 logger.debug("----------------------------------")
                 pass
         """
@@ -561,30 +666,44 @@ def visual_eval_v3_multi(
 
         if len(matched_areas) > 0:
             sum_sum_areas = np.sum(sum_areas)
-    
+
             final_size_score = np.sum(matched_areas) / np.sum(sum_areas)
             final_matched_text_score = np.mean(matched_text_scores)
             final_position_score = np.mean(position_scores)
             final_text_color_score = np.mean(text_color_scores)
-            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-            final_score = 0.2 * (final_size_score + final_matched_text_score + final_position_score + final_text_color_score + final_clip_score)
-            return_score_list.append((
-                float(sum_sum_areas), 
-                float(final_score), 
+            final_clip_score = calculate_clip_similarity_with_blocks(
+                predict_img_list[k], original_img, predict_blocks, original_blocks
+            )
+            final_score = 0.2 * (
+                final_size_score
+                + final_matched_text_score
+                + final_position_score
+                + final_text_color_score
+                + final_clip_score
+            )
+            return_score_list.append(
                 (
-                    float(final_size_score), 
-                    float(final_matched_text_score), 
-                    float(final_position_score), 
-                    float(final_text_color_score), 
-                    float(final_clip_score)
+                    float(sum_sum_areas),
+                    float(final_score),
+                    (
+                        float(final_size_score),
+                        float(final_matched_text_score),
+                        float(final_position_score),
+                        float(final_text_color_score),
+                        float(final_clip_score),
+                    ),
                 )
-            ))
+            )
         else:
             logger.warning(f"[Warning] No matched blocks in: {predict_img_list[k]}")
-            final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
-            return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
+            final_clip_score = calculate_clip_similarity_with_blocks(
+                predict_img_list[k], original_img, predict_blocks, original_blocks
+            )
+            return_score_list.append(
+                (0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score))
+            )
     return return_score_list
-    
+
     # except:
     #     logger.debug("[Warning] Error not handled in: ", input_list)
     #     return [[0.0, 0.0, (0.0, 0.0, 0.0, 0.0, 0.0)] for _ in range(len(predict_html_list))]

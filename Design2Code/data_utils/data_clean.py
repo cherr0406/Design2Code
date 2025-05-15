@@ -641,7 +641,7 @@ if __name__ == "__main__":
                     # else:
                     #     print ("filtered out by length")
                     
-    print ("total number of webpages: ", counter)
+    print (f"Total number of webpages: {counter}")
     # print ("avg number of tokens: ", total_len / counter)
 
     # with open("/juice2/scr2/nlp/pix2code/testset_filter_round1_url_dict.json", "w+") as f:

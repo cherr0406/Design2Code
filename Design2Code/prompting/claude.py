@@ -332,7 +332,7 @@ if __name__ == "__main__":
         # print (filename)
 
         if os.path.exists(os.path.join(predictions_dir, filename.replace(".png", ".html"))) and os.path.exists(os.path.join(predictions_dir, filename)):
-            logger.debug(filename, "already exist!")
+            logger.debug(f"{filename} already exist!")
             counter += 1
             continue
         
@@ -352,7 +352,7 @@ if __name__ == "__main__":
                 take_screenshot(os.path.join(predictions_dir, filename.replace(".png", ".html")), os.path.join(predictions_dir, filename))
             counter += 1
         except Exception as e:
-            logger.debug(filename)
+            logger.debug(f"{filename}")
             logger.debug(f"Function failed after retries: {e}")
             continue
             # continue 

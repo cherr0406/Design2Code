@@ -189,11 +189,11 @@ def websight():
     sorted_tag_frequency_dict = dict(sorted(tag_frequencies.items(), key=lambda item: item[1], reverse=True))
     filtered_tag_frequency_dict = {k: v for k, v in sorted_tag_frequency_dict.items() if k in html5_tags}
     # logger.debug ("tag frequency: ", filtered_tag_frequency_dict)
-    logger.debug ("mean length: ", np.mean(all_lengths))
-    logger.debug ("mean total tags: ", np.mean(all_total_tags))
-    logger.debug ("mean dom depth: ", np.mean(all_dom_depths))
-    logger.debug ("mean unique tags: ", np.mean(all_unique_tags))
-    logger.debug ("tag type: ", len(filtered_tag_frequency_dict))
+    logger.debug(f"mean length: {np.mean(all_lengths)}")
+    logger.debug(f"mean total tags: {np.mean(all_total_tags)}")
+    logger.debug(f"mean dom depth: {np.mean(all_dom_depths)}")
+    logger.debug(f"mean unique tags: {np.mean(all_unique_tags)}")
+    logger.debug(f"tag type: {len(filtered_tag_frequency_dict)}")
 
     with open("websight_stats.json", "w") as f:
         json.dump({
@@ -214,10 +214,10 @@ def websight_stats():
     unique_tags = stats["unique_tags"]
     tag_frequencies = stats["tag_frequencies"]
     
-    logger.debug ("mean length: ", np.mean(lengths), np.std(lengths))
-    logger.debug ("mean total tags: ", np.mean(total_tags), np.std(total_tags))
-    logger.debug ("mean dom depth: ", np.mean(dom_depths), np.std(dom_depths))
-    logger.debug ("mean unique tags: ", np.mean(unique_tags), np.std(unique_tags))
+    logger.debug(f"mean length: {np.mean(lengths)} {np.std(lengths)}")
+    logger.debug(f"mean total tags: {np.mean(total_tags)} {np.std(total_tags)}")
+    logger.debug(f"mean dom depth: {np.mean(dom_depths)} {np.std(dom_depths)}")
+    logger.debug(f"mean unique tags: {np.mean(unique_tags)} {np.std(unique_tags)}")
 
 if __name__ == "__main__":
     # websight()
