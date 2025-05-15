@@ -466,12 +466,12 @@ def visual_eval_v3_multi(
 
     for k, predict_blocks in enumerate(predict_blocks_list):
         if len(predict_blocks) == 0:
-            logger.debug("[Warning] No detected blocks in: ", predict_img_list[k])
+            logger.warning("[Warning] No detected blocks in: ", predict_img_list[k])
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
         elif len(original_blocks) == 0:
-            logger.debug("[Warning] No detected blocks in: ", original_img)
+            logger.warning("[Warning] No detected blocks in: ", original_img)
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
             continue
@@ -580,7 +580,7 @@ def visual_eval_v3_multi(
                 )
             ))
         else:
-            logger.debug("[Warning] No matched blocks in: ", predict_img_list[k])
+            logger.warning("[Warning] No matched blocks in: ", predict_img_list[k])
             final_clip_score = calculate_clip_similarity_with_blocks(predict_img_list[k], original_img, predict_blocks, original_blocks)
             return_score_list.append((0.0, 0.2 * final_clip_score, (0.0, 0.0, 0.0, 0.0, final_clip_score)))
     return return_score_list
