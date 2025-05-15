@@ -427,7 +427,7 @@ def make_html(filename):
 
 
 def pre_process(html_file):
-    check_repetitive_content(html_file)
+    # check_repetitive_content(html_file)
     make_html(html_file)
     with open(html_file, 'r') as file:
         soup = BeautifulSoup(file, 'html.parser')
