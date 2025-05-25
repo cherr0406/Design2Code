@@ -654,7 +654,7 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "transformers", specifier = ">=4.52.2" },
     { name = "wandb", specifier = ">=0.19.11" },
-    { name = "xformers", marker = "sys_platform == 'linux' or sys_platform == 'windows'" },
+    { name = "xformers", marker = "sys_platform == 'linux' or sys_platform == 'windows'", specifier = ">=0.0.30" },
 ]
 
 [package.metadata.requires-dev]

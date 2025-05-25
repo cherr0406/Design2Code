@@ -28,7 +28,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.52.2",
     "wandb>=0.19.11",
-    "xformers ; sys_platform == 'linux' or sys_platform == 'windows'",
+    "xformers>=0.0.30 ; sys_platform == 'linux' or sys_platform == 'windows'",
 ]
 
 [dependency-groups]
