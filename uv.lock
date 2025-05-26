@@ -649,7 +649,7 @@ requires-dist = [
     { name = "streamlit", specifier = ">=1.45.1" },
     { name = "swissarmytransformer", specifier = ">=0.4.12" },
     { name = "timm", specifier = ">=1.0.15" },
-    { name = "torch", specifier = ">=2.7.0" },
+    { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.22.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "transformers", specifier = ">=4.52.2" },
