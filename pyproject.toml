@@ -34,6 +34,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "setuptools>=80.1.0",
+    "types-seaborn>=0.13.2.20250516",
     "types-tqdm>=4.67.0.20250417",
 ]
 
