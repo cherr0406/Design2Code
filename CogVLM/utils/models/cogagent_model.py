@@ -200,6 +200,8 @@ class CogAgentModel(LLaMAModel):
 
 class FineTuneTrainCogAgentModel(CogAgentModel):
     def __init__(self, args, transformer=None, parallel_output=True, **kw_args):
+        if 'parallel_output' in kw_args:
+            del kw_args['parallel_output']
         super().__init__(args, transformer=transformer, parallel_output=parallel_output, **kw_args)
         self.args = args
         # If you want to use model parallel with a mp_size=1 checkpoint, and meanwhile you also want to use lora,
@@ -221,6 +223,8 @@ from sat.model.finetune import PTuningV2Mixin
 from sat.model.finetune.lora2 import LoraMixin
 class FineTuneTestCogAgentModel(CogAgentModel):
     def __init__(self, args, transformer=None, parallel_output=True, **kw_args):
+        if 'parallel_output' in kw_args:
+            del kw_args['parallel_output']
         super().__init__(args, transformer=transformer, parallel_output=parallel_output, **kw_args)
         if args.use_ptuning:
             self.add_mixin("ptuning", PTuningV2Mixin(args.num_layers, args.hidden_size // args.num_attention_heads, args.num_attention_heads, args.pre_seq_len))
