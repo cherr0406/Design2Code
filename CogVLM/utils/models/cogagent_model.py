@@ -156,6 +156,8 @@ class ImageMixin(BaseMixin):
     
 class CogAgentModel(LLaMAModel):
     def __init__(self, args, transformer=None, parallel_output=True, **kwargs):
+        if 'parallel_output' in kwargs:
+            del kwargs['parallel_output']
         super().__init__(args, transformer=transformer, parallel_output=parallel_output, **kwargs)
         self.image_length = args.image_length
         self.cross_image_pix = args.cross_image_pix
