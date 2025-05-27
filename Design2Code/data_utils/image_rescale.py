@@ -1,21 +1,24 @@
-from PIL import Image, ImageFile
-import os
-from tqdm import tqdm 
 import json
-from bs4 import BeautifulSoup,Tag, NavigableString
-from nltk.tokenize import sent_tokenize
-from screenshot import take_screenshot
 import logging
+import os
+
+from PIL import Image, ImageFile
+from screenshot import take_screenshot
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+
 
 def calculate_blue_percentage(img):
     # with Image.open(image_path) as img:
     pixels = list(img.getdata())
-    blue_count = sum(1 for pixel in pixels if (pixel[0] + pixel[1] < 5 and pixel[2] >= 250)) 
+    blue_count = sum(
+        1 for pixel in pixels if (pixel[0] + pixel[1] < 5 and pixel[2] >= 250)
+    )
 
-    blue_percentage = (blue_count / len(pixels))
+    blue_percentage = blue_count / len(pixels)
     return blue_percentage
+
 
 def size_filter(image_path):
     ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -25,8 +28,9 @@ def size_filter(image_path):
         short_side = min(img.width, img.height)
         long_side = max(img.width, img.height)
     if short_side < 768 and long_side < 2000:
-        return True 
-    return False 
+        return True
+    return False
+
 
 def rescale_image(image_path):
     """
@@ -70,7 +74,7 @@ def rescale_image(image_path):
             return False
 
         # Resize the image
-        resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
         # logger.debug ("resized: ", new_width, new_height)
 
         resized_img = resized_img.save(image_path)
@@ -80,10 +84,11 @@ def rescale_image(image_path):
     #     logger.debug(f"An error occurred: {e}")
     #     return False
 
+
 def rescale_filter(dir, html_path):
     with open(os.path.join(dir, html_path), "r", encoding="utf-8") as f:
-        html_content = f.read() 
-    
+        html_content = f.read()
+
     # html_content = item_truncation(html_content)
     # html_content = text_truncation(html_content)
 
@@ -91,8 +96,11 @@ def rescale_filter(dir, html_path):
     # with open(os.path.join(dir, html_path), "w", encoding="utf-8") as f:
     #     f.write(html_content)
 
-    ## take screenshot of the truncated webpage 
-    take_screenshot(os.path.join(dir, html_path), os.path.join(dir, html_path.replace(".html", ".png")))
+    ## take screenshot of the truncated webpage
+    take_screenshot(
+        os.path.join(dir, html_path),
+        os.path.join(dir, html_path.replace(".html", ".png")),
+    )
     # logger.debug (html_path, "screenshot saved")
 
     rescaled_img = rescale_image(os.path.join(dir, html_path.replace(".html", ".png")))
@@ -100,8 +108,10 @@ def rescale_filter(dir, html_path):
         # logger.debug (html_path, rescaled_img)
         return False
 
-    ## load the rescaled image 
-    with Image.open(os.path.join(dir, html_path.replace(".html", ".png"))) as rescaled_img:
+    ## load the rescaled image
+    with Image.open(
+        os.path.join(dir, html_path.replace(".html", ".png"))
+    ) as rescaled_img:
         # logger.debug (html_path, rescaled_img.size)
         ## blue is the placeholder image file; filter out cases where the entire webpage is just the image
         blue = calculate_blue_percentage(rescaled_img)
@@ -126,10 +136,11 @@ if __name__ == "__main__":
             filtered = rescale_filter(directory, "{}.html".format(i))
             if filtered:
                 selected.append("{}.html".format(i))
-        except: 
+        except:
             continue
 
     ## save selected indices
-    with open(os.path.join("/juice2/scr2/nlp/pix2code/", "auto_filtered_part2.json"), "w") as f:
+    with open(
+        os.path.join("/juice2/scr2/nlp/pix2code/", "auto_filtered_part2.json"), "w"
+    ) as f:
         json.dump(selected, f, indent=4)
-
