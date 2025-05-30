@@ -500,12 +500,12 @@ def visual_eval_v3_multi(
         # This will help fix some html syntax error
         pre_process(predict_html)
         take_screenshot_func(predict_html, predict_img)
-        predict_blocks = get_blocks_ocr_free(predict_img)
+        predict_blocks = get_blocks_ocr_free(predict_img, take_screenshot_func)
         predict_blocks_list.append(predict_blocks)
 
     original_img = original_html.replace(".html", ".png")
     take_screenshot_func(original_html, original_img)
-    original_blocks = get_blocks_ocr_free(original_img)
+    original_blocks = get_blocks_ocr_free(original_img, take_screenshot_func)
     original_blocks = merge_blocks_by_bbox(original_blocks)
 
     # Consider context similarity for block matching

@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageColor
 import os
-from bs4 import BeautifulSoup, NavigableString, Tag, Comment
-from pathlib import Path
+from bs4 import BeautifulSoup, Comment, Tag
+from bs4.element import NavigableString
 import logging
 
 logger = logging.getLogger(__name__)
@@ -234,28 +234,36 @@ def get_blocks_from_image_diff_pixels(image_path, html_text_color_tree, differen
 def get_itermediate_names(name):
     return name.replace(".png", ".html"), name.replace(".png", "_p.html"), name.replace(".png", "_p_1.html"), name.replace(".png", "_p.png"), name.replace(".png", "_p_1.png")
 
-def get_blocks_ocr_free(image_path):
+def get_blocks_ocr_free(image_path, take_screenshot_func):
     html, p_html, p_html_1, p_png, p_png_1 = get_itermediate_names(image_path)
     process_html(html, p_html)
     process_html(html, p_html_1, offset=50)
 
-    os.system(f"python3 {Path(__file__).parent}/screenshot_single.py --html {p_html} --png {p_png}")
-    os.system(f"python3 {Path(__file__).parent}/screenshot_single.py --html {p_html_1} --png {p_png_1}")
+    take_screenshot_func(p_html, p_png)
+    take_screenshot_func(p_html_1, p_png_1)
 
     different_pixels = find_different_pixels(p_png, p_png_1)
 
+    # Clean up helper
+    def cleanup(paths):
+        for path in paths:
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
     if different_pixels is None:
         logger.debug(f"[Warning] Unable to get pixels with different colors from {p_png}, {p_png_1}...")
-        os.system(f"rm {p_html} {p_png} {p_html_1} {p_png_1}")
+        cleanup([p_html, p_png, p_html_1, p_png_1])
         return []
 
     html_text_color_tree = flatten_tree(extract_text_with_color(p_html))
     try:
         blocks = get_blocks_from_image_diff_pixels(p_png, html_text_color_tree, different_pixels)
-    except:
+    except Exception:
         logger.debug(f"[Warning] Unable to get blocks from {p_png}...")
-        os.system(f"rm {p_html} {p_png} {p_html_1} {p_png_1}")
+        cleanup([p_html, p_png, p_html_1, p_png_1])
         return []
 
-    os.system(f"rm {p_html} {p_png} {p_html_1} {p_png_1}")
+    cleanup([p_html, p_png, p_html_1, p_png_1])
     return blocks
