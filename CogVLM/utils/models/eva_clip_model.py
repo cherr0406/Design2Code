@@ -107,6 +107,8 @@ class EVA2CLIPModel(BaseModel):
         args.max_sequence_length = property.pre_len + property.num_patches + property.post_len
         if 'activation_func' not in kwargs:
             kwargs['activation_func'] = gelu
+        if 'parallel_output' in kwargs:
+            kwargs.pop('parallel_output')
         super().__init__(args, transformer=transformer, parallel_output=parallel_output, **kwargs)
         self.transformer.property = property
         self.add_mixin("patch_embedding", ImagePatchEmbeddingMixin(args.in_channels, args.hidden_size, property))
