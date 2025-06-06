@@ -119,7 +119,7 @@ def extract_text_with_color(html_file):
                             color = ImageColor.getrgb(color)  # Convert named color to RGB
                         return '#{:02x}{:02x}{:02x}'.format(*color)  # Convert RGB to hexadecimal
                     except ValueError:
-                        logger.debug(f"Warning: unable to identify or convert color in {html_file}...", color)
+                        logger.debug(f"Warning: unable to identify or convert color in {html_file}... color={color}")
                         return None
         return None
 
